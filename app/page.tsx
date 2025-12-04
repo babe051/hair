@@ -120,6 +120,8 @@ export default function Home() {
   const windowRefs = useRef<(HTMLDivElement | null)[]>([])
   const searchInputRef = useRef<HTMLInputElement>(null)
   const desktopRef = useRef<HTMLDivElement>(null)
+  const isOverviewRef = useRef(isOverview)
+  const filteredTopicsRef = useRef<Topic[]>([])
 
   // Memoize filtered topics for search
   const filteredTopics = useMemo(() => {
@@ -132,6 +134,12 @@ export default function Home() {
         topic.id.toLowerCase().includes(query)
     )
   }, [searchQuery])
+  
+  // Keep refs in sync
+  useEffect(() => {
+    isOverviewRef.current = isOverview
+    filteredTopicsRef.current = filteredTopics
+  }, [isOverview, filteredTopics])
 
   // Navigate to topic with direction tracking
   const navigateToTopic = useCallback((newIndex: number) => {
@@ -163,6 +171,9 @@ export default function Home() {
   // Keyboard event handler
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      // Use refs to get latest values
+      const currentIsOverview = isOverviewRef.current
+      const currentFilteredTopics = filteredTopicsRef.current
       // Help modal toggle
       if (event.key === '?' && !showHelpModal) {
         event.preventDefault()
@@ -217,31 +228,69 @@ export default function Home() {
           event.preventDefault()
           setIsOverview((prev) => {
             if (!prev) {
-              setOverviewFocusedIndex(currentIndex)
+              // Find current topic index in filtered topics
+              const currentTopicId = topics[currentIndex].id
+              const filteredIndex = currentFilteredTopics.findIndex((t) => t.id === currentTopicId)
+              setOverviewFocusedIndex(filteredIndex >= 0 ? filteredIndex : 0)
             }
             return !prev
           })
         }
       }
 
-      // Arrow keys in overview mode
-      if (isOverview && !showHelpModal) {
-        if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
-          event.preventDefault()
-          setOverviewFocusedIndex((prev) => {
-            const next = (prev + 1) % filteredTopics.length
-            windowRefs.current[next]?.focus()
-            return next
-          })
-          return
+      // Arrow keys in overview mode - must be checked early
+      if (currentIsOverview && !showHelpModal) {
+        // Don't handle arrow keys if user is typing in search input
+        const target = event.target as HTMLElement
+        const isSearchInput = target instanceof HTMLInputElement && 
+                              target.classList.contains('qogir-search-input')
+        
+        if (isSearchInput) {
+          return // Let the input handle its own arrow keys
         }
-        if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+        
+        // Check if it's an arrow key
+        const isArrowKey = event.key === 'ArrowRight' || 
+                          event.key === 'ArrowDown' || 
+                          event.key === 'ArrowLeft' || 
+                          event.key === 'ArrowUp'
+        
+        if (isArrowKey) {
+          const topicsCount = currentFilteredTopics.length
+          if (topicsCount === 0) {
+            return
+          }
+          
           event.preventDefault()
-          setOverviewFocusedIndex((prev) => {
-            const next = (prev - 1 + filteredTopics.length) % filteredTopics.length
-            windowRefs.current[next]?.focus()
-            return next
-          })
+          event.stopPropagation()
+          
+          if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+            setOverviewFocusedIndex((prev) => {
+              const next = (prev + 1) % topicsCount
+              // Use requestAnimationFrame to ensure DOM is updated
+              requestAnimationFrame(() => {
+                const element = windowRefs.current[next]
+                if (element) {
+                  element.focus()
+                  element.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+                }
+              })
+              return next
+            })
+          } else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+            setOverviewFocusedIndex((prev) => {
+              const next = (prev - 1 + topicsCount) % topicsCount
+              // Use requestAnimationFrame to ensure DOM is updated
+              requestAnimationFrame(() => {
+                const element = windowRefs.current[next]
+                if (element) {
+                  element.focus()
+                  element.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+                }
+              })
+              return next
+            })
+          }
           return
         }
       }
@@ -251,14 +300,44 @@ export default function Home() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown)
     }
-  }, [isOverview, showHelpModal, currentIndex, goToNext, goToPrevious, jumpToTopic, filteredTopics.length])
+  }, [showHelpModal, currentIndex, goToNext, goToPrevious, jumpToTopic])
 
   // Focus management in overview mode
   useEffect(() => {
-    if (isOverview && windowRefs.current[overviewFocusedIndex]) {
-      windowRefs.current[overviewFocusedIndex]?.focus()
+    if (isOverview && filteredTopics.length > 0) {
+      // Ensure focused index is valid
+      const validIndex = Math.max(0, Math.min(overviewFocusedIndex, filteredTopics.length - 1))
+      if (validIndex !== overviewFocusedIndex && overviewFocusedIndex >= 0) {
+        setOverviewFocusedIndex(validIndex)
+      }
+      // Focus the window after DOM is ready
+      requestAnimationFrame(() => {
+        const element = windowRefs.current[validIndex]
+        if (element) {
+          element.focus()
+        }
+      })
     }
-  }, [isOverview, overviewFocusedIndex])
+  }, [isOverview, overviewFocusedIndex, filteredTopics])
+
+  // Reset focused index when search query changes
+  useEffect(() => {
+    if (isOverview) {
+      if (searchQuery) {
+        // When search changes, reset to first result
+        setOverviewFocusedIndex(0)
+      } else {
+        // When search is cleared, find current topic in all topics
+        const currentTopicId = topics[currentIndex].id
+        const filteredIndex = filteredTopics.findIndex((t) => t.id === currentTopicId)
+        if (filteredIndex >= 0) {
+          setOverviewFocusedIndex(filteredIndex)
+        } else {
+          setOverviewFocusedIndex(0)
+        }
+      }
+    }
+  }, [searchQuery, isOverview, currentIndex, filteredTopics])
 
   // Mouse tracking for 3D parallax effects
   useEffect(() => {
@@ -417,17 +496,23 @@ export default function Home() {
         {isOverview
           ? filteredTopics.map((topic, index) => {
               const topicIndex = topics.findIndex((t) => t.id === topic.id)
+              const isFocused = index === overviewFocusedIndex
               return (
                 <div
-                  key={topic.id}
+                  key={`${topic.id}-${index}`}
                   ref={(el) => {
-                    windowRefs.current[index] = el
+                    if (el) {
+                      windowRefs.current[index] = el
+                    } else {
+                      // Clean up ref when element is removed
+                      windowRefs.current[index] = null
+                    }
                   }}
-                  className={`qogir-window ${topicIndex === currentIndex ? 'active' : ''} ${index === overviewFocusedIndex ? 'focused' : ''}`}
+                  className={`qogir-window ${topicIndex === currentIndex ? 'active' : ''} ${isFocused ? 'focused' : ''}`}
                   onClick={() => handleWindowClick(index)}
                   role="article"
                   aria-label={`Topic: ${topic.title}`}
-                  tabIndex={0}
+                  tabIndex={isFocused ? 0 : -1}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                       e.preventDefault()
