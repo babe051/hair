@@ -120,8 +120,18 @@ export default function Home() {
   const windowRefs = useRef<(HTMLDivElement | null)[]>([])
   const searchInputRef = useRef<HTMLInputElement>(null)
   const desktopRef = useRef<HTMLDivElement>(null)
+  const windowsContainerRef = useRef<HTMLDivElement>(null)
   const isOverviewRef = useRef(isOverview)
   const filteredTopicsRef = useRef<Topic[]>([])
+  
+  // Mobile detection
+  const [isMobile, setIsMobile] = useState<boolean>(false)
+  
+  // Touch navigation state
+  const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null)
+  const longPressTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const SWIPE_THRESHOLD = 70 // Minimum distance for swipe
+  const LONG_PRESS_DURATION = 2000 // 2 seconds
 
   // Memoize filtered topics for search
   const filteredTopics = useMemo(() => {
@@ -140,6 +150,16 @@ export default function Home() {
     isOverviewRef.current = isOverview
     filteredTopicsRef.current = filteredTopics
   }, [isOverview, filteredTopics])
+
+  // Mobile detection
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 767)
+    }
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
 
   // Navigate to topic with direction tracking
   const navigateToTopic = useCallback((newIndex: number) => {
@@ -392,6 +412,100 @@ export default function Home() {
     }
   }, [])
 
+  // Touch handlers for mobile swipe navigation
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (!isMobile || isOverview) return
+    
+    // Don't start swipe if touching interactive elements or scrolling content
+    const target = e.target as HTMLElement
+    const windowContent = target.closest('.qogir-window-content')
+    if (target.tagName === 'INPUT' || 
+        target.tagName === 'BUTTON' || 
+        target.tagName === 'A' ||
+        (windowContent && (windowContent.scrollHeight > windowContent.clientHeight))) {
+      return
+    }
+    
+    const touch = e.touches[0]
+    touchStartRef.current = {
+      x: touch.clientX,
+      y: touch.clientY,
+      time: Date.now()
+    }
+    
+    // Start long-press timer (only in focused mode)
+    longPressTimerRef.current = setTimeout(() => {
+      setIsOverview(true)
+      touchStartRef.current = null
+    }, LONG_PRESS_DURATION)
+  }, [isMobile, isOverview])
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!isMobile || isOverview || !touchStartRef.current) return
+    
+    // Cancel long-press if user moves
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current)
+      longPressTimerRef.current = null
+    }
+    
+    const touch = e.touches[0]
+    const deltaX = touch.clientX - touchStartRef.current.x
+    const deltaY = touch.clientY - touchStartRef.current.y
+    
+    // If vertical movement is significant, cancel swipe (user is scrolling)
+    if (Math.abs(deltaY) > Math.abs(deltaX) && Math.abs(deltaY) > 20) {
+      touchStartRef.current = null
+      return
+    }
+    
+    // Prevent default scrolling if horizontal swipe is detected
+    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 10) {
+      e.preventDefault()
+    }
+  }, [isMobile, isOverview])
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (!isMobile || isOverview || !touchStartRef.current) return
+    
+    // Cancel long-press timer
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current)
+      longPressTimerRef.current = null
+    }
+    
+    const touch = e.changedTouches[0]
+    const deltaX = touch.clientX - touchStartRef.current.x
+    const deltaY = touch.clientY - touchStartRef.current.y
+    const deltaTime = Date.now() - touchStartRef.current.time
+    
+    // Check if it's a valid swipe (horizontal, fast enough, far enough)
+    if (Math.abs(deltaX) > SWIPE_THRESHOLD && 
+        Math.abs(deltaX) > Math.abs(deltaY) && 
+        deltaTime < 500) {
+      e.preventDefault()
+      
+      if (deltaX > 0) {
+        // Swipe right - previous topic
+        goToPrevious()
+      } else {
+        // Swipe left - next topic
+        goToNext()
+      }
+    }
+    
+    touchStartRef.current = null
+  }, [isMobile, isOverview, goToNext, goToPrevious])
+
+  // Cleanup long-press timer on unmount
+  useEffect(() => {
+    return () => {
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current)
+      }
+    }
+  }, [])
+
   const currentTopic = topics[currentIndex]
 
   // Calculate the position to display in footer
@@ -479,6 +593,16 @@ export default function Home() {
       {/* Search Bar (shown in overview mode) */}
       {isOverview && (
         <div className="qogir-search-bar">
+          {isMobile && (
+            <button
+              className="qogir-mobile-close-overview"
+              onClick={() => setIsOverview(false)}
+              aria-label="Close overview"
+              title="Close overview"
+            >
+              ← Back
+            </button>
+          )}
           <input
             ref={searchInputRef}
             type="text"
@@ -509,9 +633,13 @@ export default function Home() {
 
       {/* Windows container */}
       <div
+        ref={windowsContainerRef}
         className="windows-container"
         role={isOverview ? 'dialog' : 'main'}
         aria-label={isOverview ? 'Overview of all topics' : 'Current topic view'}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
       >
         {/* Conditional rendering: only render active window in focused mode, all in overview */}
         {isOverview

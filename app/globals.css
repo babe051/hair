@@ -593,6 +593,35 @@ body {
   animation: slideDown3d 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Mobile close overview button */
+.qogir-mobile-close-overview {
+  background: rgba(59, 175, 218, 0.2);
+  border: 1px solid var(--qogir-accent);
+  color: var(--qogir-text-light);
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.qogir-mobile-close-overview:hover {
+  background: rgba(59, 175, 218, 0.3);
+  transform: translateY(-1px);
+}
+
+.qogir-mobile-close-overview:active {
+  transform: translateY(0);
+}
+
+.qogir-mobile-close-overview:focus-visible {
+  outline: 2px solid var(--qogir-accent);
+  outline-offset: 2px;
+}
+
 @keyframes slideDown3d {
   from {
     transform: translateX(-50%) translateY(-20px) translateZ(-100px) rotateX(-10deg);
@@ -953,46 +982,162 @@ body {
   }
 }
 
-/* Mobile responsiveness */
-@media (max-width: 768px) {
-  .qogir-window {
-    max-width: 100%;
-    max-height: calc(100vh - var(--qogir-statusbar-height));
-    border-radius: 0;
+/* Mobile responsiveness - Phone (≤767px) */
+@media (max-width: 767px) {
+  /* Focused mode: single window fills viewport */
+  .windows-container {
+    padding-inline: 0;
+    padding-bottom: var(--qogir-statusbar-height);
   }
 
+  .qogir-window {
+    max-width: 100%;
+    width: 100%;
+    max-height: 100vh;
+    height: 100vh;
+    border-radius: 0;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: var(--qogir-statusbar-height);
+  }
+
+  /* Only show active window in focused mode on mobile */
+  .qogir-window:not(.active) {
+    display: none;
+  }
+
+  .qogir-window.active {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: var(--qogir-statusbar-height);
+    width: 100%;
+    height: 100%;
+    max-width: 100%;
+    max-height: 100%;
+    transform: translateX(0) translateZ(0) scale(1) rotateY(0deg) rotateX(0deg) !important;
+    /* Disable 3D transforms on mobile for performance */
+    transform-style: flat;
+  }
+
+  /* Typography adjustments */
   .qogir-window-title {
-    font-size: 1.8rem;
+    font-size: 1.75rem;
+    line-height: 1.3;
   }
 
   .qogir-window-body {
     font-size: 1rem;
+    line-height: 1.7;
   }
 
   .qogir-window-content {
-    padding: 2rem 1.5rem;
+    padding: 1.5rem;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    /* Allow vertical scrolling in content */
+    touch-action: pan-y;
   }
 
+  /* Prevent swipe navigation when scrolling content */
+  .qogir-window-content * {
+    touch-action: pan-y;
+  }
+
+  .qogir-window-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+  }
+
+  /* Overview mode: vertical list or 2-column grid */
   .qogir-desktop.overview .windows-container {
-    grid-template-columns: 1fr;
-    padding: 1.5rem;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    padding: 1rem;
     padding-top: 4.5rem;
     padding-bottom: calc(var(--qogir-statusbar-height) + 1rem);
-    padding-inline: 1.5rem; /* Safe padding on mobile */
-    gap: 1.5rem;
+    padding-inline: 1rem;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    align-items: stretch;
   }
 
+  .qogir-desktop.overview .qogir-window {
+    position: relative;
+    min-height: 200px;
+    height: auto;
+    max-height: none;
+    cursor: pointer;
+    /* Larger touch targets */
+    min-width: 0;
+    touch-action: manipulation;
+    /* Ensure cards are easily tappable */
+    min-height: 180px;
+  }
+
+  .qogir-desktop.overview .qogir-window-content {
+    padding: 1.25rem;
+  }
+
+  .qogir-desktop.overview .qogir-window-title {
+    font-size: 1.25rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .qogir-desktop.overview .qogir-window-icon {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .qogir-desktop.overview .qogir-window-tagline {
+    font-size: 0.85rem;
+    margin-bottom: 0.5rem;
+  }
+
+  /* Disable 3D effects on mobile for performance */
+  .qogir-desktop.overview .qogir-window {
+    transform: scale(1) translateZ(0) rotateY(0deg) rotateX(0deg) !important;
+    transform-style: flat;
+  }
+
+  .qogir-desktop.overview .qogir-window:hover {
+    transform: scale(1.02) translateZ(0) rotateY(0deg) rotateX(0deg) !important;
+  }
+
+  .qogir-desktop.overview .qogir-window.active {
+    transform: scale(1.02) translateZ(0) rotateY(0deg) rotateX(0deg) !important;
+  }
+
+  /* Search bar adjustments */
   .qogir-search-bar {
     min-width: calc(100% - 2rem);
     max-width: calc(100% - 2rem);
     left: 1rem;
-    transform: none;
+    transform: translateX(0) translateZ(0);
+    flex-wrap: wrap;
+    gap: 0.5rem;
   }
 
+  .qogir-search-input {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .qogir-mobile-close-overview {
+    order: -1;
+    width: 100%;
+    margin-bottom: 0.25rem;
+  }
+
+  /* Status bar adjustments */
   .qogir-statusbar {
     font-size: 0.75rem;
     padding: 0 1rem;
-    gap: 1rem;
+    gap: 0.75rem;
     height: 2.5rem;
   }
 
@@ -1006,6 +1151,7 @@ body {
     min-width: 1.5rem;
   }
 
+  /* Current topic indicator */
   .qogir-current-topic {
     font-size: 0.8rem;
     padding: 0.6rem 1rem;
@@ -1013,6 +1159,7 @@ body {
     right: 0.5rem;
   }
 
+  /* Header bar adjustments */
   .qogir-headerbar {
     height: 44px;
     padding: 0 0.75rem;
@@ -1027,6 +1174,7 @@ body {
     height: 14px;
   }
 
+  /* Modal adjustments */
   .qogir-modal {
     max-width: 100%;
     margin: 1rem;
@@ -1035,17 +1183,36 @@ body {
   .qogir-modal-content {
     padding: 1.5rem;
   }
+
+  /* Disable mouse parallax on mobile */
+  .qogir-desktop:not(.overview) {
+    perspective: none;
+  }
 }
 
-/* Small mobile screens (425px and below) */
+/* Small mobile screens (≤425px) - Single column in overview */
 @media (max-width: 425px) {
   .qogir-desktop.overview .windows-container {
-    padding-inline: 1rem; /* Reduced padding on very small screens */
+    grid-template-columns: 1fr;
+    padding-inline: 1rem;
     gap: 1rem;
   }
   
   .qogir-desktop.overview .qogir-window {
     min-width: 0;
+    min-height: 180px;
+  }
+
+  .qogir-window-title {
+    font-size: 1.5rem;
+  }
+
+  .qogir-window-body {
+    font-size: 0.95rem;
+  }
+
+  .qogir-window-content {
+    padding: 1.25rem;
   }
 }
 
