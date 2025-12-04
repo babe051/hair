@@ -157,22 +157,13 @@ export default function Home() {
   const currentTopic = topics[currentIndex]
 
   return (
-    <div className={`desktop ${isOverview ? 'overview' : ''}`}>
+    <div className={`qogir-desktop ${isOverview ? 'overview' : ''}`}>
       {/* Overlay for overview mode */}
-      <div className="overlay" aria-hidden="true" />
+      <div className="qogir-overlay" aria-hidden="true" />
 
       {/* Current topic indicator (hidden in overview) */}
-      <div className="current-topic" aria-live="polite" aria-atomic="true">
+      <div className="qogir-current-topic" aria-live="polite" aria-atomic="true">
         Current topic: {currentTopic.shortTitle}
-      </div>
-
-      {/* Help area */}
-      <div className="help-area" role="region" aria-label="Keyboard shortcuts">
-        <span>Alt+Q: next topic</span>
-        {' · '}
-        <span>W: overview</span>
-        {' · '}
-        <span>Esc: close overview</span>
       </div>
 
       {/* Windows container */}
@@ -184,7 +175,7 @@ export default function Home() {
         {topics.map((topic, index) => (
           <div
             key={topic.id}
-            className={`window ${index === currentIndex ? 'active' : ''}`}
+            className={`qogir-window ${index === currentIndex ? 'active' : ''}`}
             onClick={() => handleWindowClick(index)}
             role="article"
             aria-label={`Topic: ${topic.title}`}
@@ -196,14 +187,43 @@ export default function Home() {
               }
             }}
           >
-            <span className="window-icon" aria-hidden="true">
-              {topic.icon}
-            </span>
-            <h1 className="window-title">{topic.title}</h1>
-            <div className="window-tagline">{topic.tagline}</div>
-            <div className="window-content">{topic.content}</div>
+            {/* Qogir Header Bar */}
+            <div className="qogir-headerbar">
+              <div className="qogir-headerbar-title">{topic.title}</div>
+              <div className="qogir-window-buttons">
+                <div className="qogir-window-button" aria-label="Minimize" />
+                <div className="qogir-window-button" aria-label="Maximize" />
+                <div className="qogir-window-button close" aria-label="Close" />
+              </div>
+            </div>
+
+            {/* Window content */}
+            <div className="qogir-window-content">
+              <span className="qogir-window-icon" aria-hidden="true">
+                {topic.icon}
+              </span>
+              <h1 className="qogir-window-title">{topic.title}</h1>
+              <div className="qogir-window-tagline">{topic.tagline}</div>
+              <div className="qogir-window-body">{topic.content}</div>
+            </div>
           </div>
         ))}
+      </div>
+
+      {/* Qogir Status Bar with keyboard shortcuts */}
+      <div className="qogir-statusbar" role="status" aria-label="Keyboard shortcuts">
+        <div className="qogir-statusbar-item">
+          <span className="qogir-statusbar-key">Alt+Q</span>
+          <span className="qogir-statusbar-label">next topic</span>
+        </div>
+        <div className="qogir-statusbar-item">
+          <span className="qogir-statusbar-key">W</span>
+          <span className="qogir-statusbar-label">overview</span>
+        </div>
+        <div className="qogir-statusbar-item">
+          <span className="qogir-statusbar-key">Esc</span>
+          <span className="qogir-statusbar-label">close overview</span>
+        </div>
       </div>
     </div>
   )
