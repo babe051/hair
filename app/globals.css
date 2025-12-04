@@ -67,6 +67,8 @@ body {
   perspective: var(--qogir-perspective);
   perspective-origin: var(--qogir-perspective-origin);
   transform-style: var(--qogir-transform-style);
+  /* Add depth to desktop background */
+  box-shadow: inset 0 0 200px rgba(0, 0, 0, 0.3);
 }
 
 .qogir-desktop.overview {
@@ -192,6 +194,12 @@ body {
   outline: none;
   transform-style: preserve-3d;
   backface-visibility: hidden;
+  /* Add subtle 3D depth to window content */
+  background: linear-gradient(
+    to bottom,
+    var(--qogir-window-bg) 0%,
+    rgba(240, 241, 245, 0.98) 100%
+  );
 }
 
 /* Focus indicators */
@@ -203,16 +211,27 @@ body {
 .qogir-window.focused {
   outline: 3px solid var(--qogir-accent);
   outline-offset: 2px;
-  box-shadow: var(--qogir-shadow-md), 0 0 0 3px var(--qogir-accent);
+  box-shadow: 
+    var(--qogir-shadow-md), 
+    0 0 0 3px var(--qogir-accent),
+    0 0 40px rgba(59, 175, 218, 0.3),
+    0 0 80px rgba(59, 175, 218, 0.15);
+  transform: translateZ(50px) scale(1.02) !important;
 }
 
 /* Focused mode: active window with 3D depth and parallax */
 .qogir-window.active {
   opacity: 1;
-  transform: translateX(0) translateZ(0) scale(1) rotateY(0deg);
+  transform: translateX(0) translateZ(0) scale(1) rotateY(0deg) rotateX(0deg);
   z-index: 10;
-  box-shadow: var(--qogir-shadow-md), 0 0 60px rgba(59, 175, 218, 0.1);
+  box-shadow: 
+    var(--qogir-shadow-md), 
+    0 0 80px rgba(59, 175, 218, 0.15),
+    0 0 120px rgba(59, 175, 218, 0.08),
+    inset 0 0 30px rgba(255, 255, 255, 0.1);
   transition: transform 0.1s ease-out, box-shadow var(--qogir-transition);
+  /* Add depth to window edges */
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 /* Focused mode: inactive windows with 3D positioning */
@@ -222,9 +241,13 @@ body {
   transform: translateX(100px) translateZ(-200px) scale(0.95) rotateY(-15deg);
 }
 
-/* Qogir Header Bar (GNOME-style titlebar) */
+/* Qogir Header Bar (GNOME-style titlebar) with 3D effect */
 .qogir-headerbar {
-  background: var(--qogir-headerbar-bg);
+  background: linear-gradient(
+    to bottom,
+    rgba(229, 231, 235, 0.95) 0%,
+    var(--qogir-headerbar-bg) 100%
+  );
   height: var(--qogir-headerbar-height);
   display: flex;
   align-items: center;
@@ -232,6 +255,25 @@ body {
   padding: 0 1rem;
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
   flex-shrink: 0;
+  transform: translateZ(1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  position: relative;
+}
+
+.qogir-headerbar::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent 0%,
+    rgba(255, 255, 255, 0.5) 50%,
+    transparent 100%
+  );
+  transform: translateZ(2px);
 }
 
 .qogir-headerbar-title {
@@ -269,16 +311,18 @@ body {
 .qogir-window-button:hover {
   border-color: var(--qogir-accent);
   background: rgba(59, 175, 218, 0.15);
-  transform: scale(1.1);
+  transform: scale(1.15) translateZ(5px);
+  box-shadow: 0 2px 8px rgba(59, 175, 218, 0.3);
 }
 
 .qogir-window-button:active {
-  transform: scale(0.95);
+  transform: scale(0.9) translateZ(2px);
 }
 
 .qogir-window-button.close:hover {
   border-color: var(--qogir-close-hover);
   background: rgba(224, 108, 117, 0.15);
+  box-shadow: 0 2px 8px rgba(224, 108, 117, 0.3);
 }
 
 .qogir-window-button:focus-visible {
@@ -286,18 +330,45 @@ body {
   outline-offset: 2px;
 }
 
-/* Window content area */
+/* Window content area with 3D depth */
 .qogir-window-content {
   flex: 1;
   overflow-y: auto;
   padding: var(--qogir-padding);
   color: var(--qogir-text-dark);
+  transform: translateZ(0);
+  position: relative;
+}
+
+/* Add depth illusion to content */
+.qogir-window-content::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent 0%,
+    rgba(0, 0, 0, 0.05) 50%,
+    transparent 100%
+  );
+  transform: translateZ(1px);
 }
 
 .qogir-window-icon {
   font-size: 4rem;
   margin-bottom: 1.5rem;
   display: block;
+  transform: translateZ(20px);
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
+  transition: transform 0.3s ease, filter 0.3s ease;
+}
+
+.qogir-window:hover .qogir-window-icon {
+  transform: translateZ(30px) scale(1.05);
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.15));
 }
 
 .qogir-window-title {
@@ -306,6 +377,13 @@ body {
   color: var(--qogir-text-dark);
   margin-bottom: 1.5rem;
   line-height: 1.2;
+  transform: translateZ(10px);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
+}
+
+.qogir-window:hover .qogir-window-title {
+  transform: translateZ(15px) scale(1.02);
 }
 
 .qogir-window-tagline {
@@ -336,7 +414,7 @@ body {
   margin-bottom: 0.8rem;
 }
 
-/* Overview mode: all windows visible as cards */
+/* Overview mode: all windows visible as cards with 3D depth */
 .qogir-desktop.overview .windows-container {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -347,31 +425,64 @@ body {
   align-items: start;
   justify-content: center;
   overflow-y: auto;
+  transform-style: preserve-3d;
+  perspective: 1500px;
 }
 
 .qogir-desktop.overview .qogir-window {
   position: relative;
   opacity: 1;
-  transform: scale(1) translateZ(0) rotateY(0deg);
+  transform: scale(1) translateZ(0) rotateY(0deg) rotateX(0deg);
   max-width: 100%;
   max-height: none;
   cursor: pointer;
   pointer-events: auto;
-  transition: transform var(--qogir-transition-fast),
-              box-shadow var(--qogir-transition-fast),
-              border var(--qogir-transition-fast);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.3s ease,
+              border 0.3s ease;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+/* Staggered depth for cards - each card has different Z position */
+.qogir-desktop.overview .qogir-window:nth-child(1) {
+  transform: scale(1) translateZ(20px) rotateY(0deg) rotateX(0deg);
+}
+
+.qogir-desktop.overview .qogir-window:nth-child(2) {
+  transform: scale(1) translateZ(40px) rotateY(0deg) rotateX(0deg);
+}
+
+.qogir-desktop.overview .qogir-window:nth-child(3) {
+  transform: scale(1) translateZ(60px) rotateY(0deg) rotateX(0deg);
+}
+
+.qogir-desktop.overview .qogir-window:nth-child(4) {
+  transform: scale(1) translateZ(80px) rotateY(0deg) rotateX(0deg);
 }
 
 .qogir-desktop.overview .qogir-window:hover {
-  transform: scale(1.03) translateZ(50px) rotateY(5deg);
-  box-shadow: var(--qogir-shadow-md), 0 0 40px rgba(59, 175, 218, 0.2);
+  transform: scale(1.08) translateZ(150px) rotateY(8deg) rotateX(-5deg) !important;
+  box-shadow: 
+    0 25px 80px rgba(0, 0, 0, 0.5),
+    0 0 80px rgba(59, 175, 218, 0.4),
+    0 0 120px rgba(59, 175, 218, 0.2),
+    inset 0 0 40px rgba(59, 175, 218, 0.15),
+    inset 0 0 60px rgba(255, 255, 255, 0.1);
+  z-index: 20;
+  border: 1px solid rgba(59, 175, 218, 0.3);
 }
 
 .qogir-desktop.overview .qogir-window.active {
   border: 2px solid var(--qogir-accent);
-  box-shadow: 0 0 0 2px var(--qogir-accent), 0 8px 24px rgba(59, 175, 218, 0.3);
-  transform: scale(1.05) translateZ(100px) rotateY(0deg);
-  animation: pulse3d 2s ease-in-out infinite, float3d 4s ease-in-out infinite;
+  box-shadow: 
+    0 0 0 2px var(--qogir-accent), 
+    0 20px 60px rgba(59, 175, 218, 0.4),
+    0 0 80px rgba(59, 175, 218, 0.3),
+    inset 0 0 40px rgba(59, 175, 218, 0.15);
+  transform: scale(1.06) translateZ(120px) rotateY(0deg) rotateX(0deg) !important;
+  animation: pulse3d 2s ease-in-out infinite, float3d 4s ease-in-out infinite, glow3d 3s ease-in-out infinite;
+  z-index: 15;
 }
 
 @keyframes pulse3d {
@@ -385,16 +496,33 @@ body {
 
 @keyframes float3d {
   0%, 100% {
-    transform: scale(1.05) translateZ(100px) translateY(0) rotateY(0deg);
+    transform: scale(1.06) translateZ(120px) translateY(0) rotateY(0deg) rotateX(0deg);
   }
   25% {
-    transform: scale(1.05) translateZ(100px) translateY(-5px) rotateY(1deg);
+    transform: scale(1.06) translateZ(120px) translateY(-8px) rotateY(2deg) rotateX(1deg);
   }
   50% {
-    transform: scale(1.05) translateZ(100px) translateY(0) rotateY(0deg);
+    transform: scale(1.06) translateZ(120px) translateY(0) rotateY(0deg) rotateX(0deg);
   }
   75% {
-    transform: scale(1.05) translateZ(100px) translateY(5px) rotateY(-1deg);
+    transform: scale(1.06) translateZ(120px) translateY(8px) rotateY(-2deg) rotateX(-1deg);
+  }
+}
+
+@keyframes glow3d {
+  0%, 100% {
+    box-shadow: 
+      0 0 0 2px var(--qogir-accent), 
+      0 20px 60px rgba(59, 175, 218, 0.4),
+      0 0 80px rgba(59, 175, 218, 0.3),
+      inset 0 0 40px rgba(59, 175, 218, 0.15);
+  }
+  50% {
+    box-shadow: 
+      0 0 0 2px var(--qogir-accent), 
+      0 25px 70px rgba(59, 175, 218, 0.5),
+      0 0 100px rgba(59, 175, 218, 0.4),
+      inset 0 0 50px rgba(59, 175, 218, 0.2);
   }
 }
 
@@ -533,7 +661,7 @@ body {
   color: var(--qogir-text-light);
   cursor: pointer;
   font-size: 0.7rem;
-  padding: 0.25rem 0.5rem;
+  padding: 0.5rem 0.5rem;
   border-radius: 4px;
   transition: background var(--qogir-transition-fast);
 }

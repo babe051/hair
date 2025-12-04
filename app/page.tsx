@@ -369,6 +369,29 @@ export default function Home() {
     }
   }, [isOverview, filteredTopics, navigateToTopic])
 
+  // 3D tilt effect on mouse move for overview cards
+  const handleCardMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>, index: number) => {
+    if (!isOverview) return
+    
+    const card = e.currentTarget
+    const rect = card.getBoundingClientRect()
+    const x = e.clientX - rect.left
+    const y = e.clientY - rect.top
+    
+    const centerX = rect.width / 2
+    const centerY = rect.height / 2
+    
+    const rotateX = ((y - centerY) / centerY) * -10 // Max 10 degrees
+    const rotateY = ((x - centerX) / centerX) * 10 // Max 10 degrees
+    
+    card.style.transform = `scale(1.05) translateZ(100px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`
+  }, [isOverview])
+
+  const handleCardMouseLeave = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isOverview) return
+    e.currentTarget.style.transform = ''
+  }, [isOverview])
+
   // Window button handlers
   const handleWindowButtonClick = useCallback((action: 'minimize' | 'maximize' | 'close', e: React.MouseEvent) => {
     e.stopPropagation()
@@ -510,6 +533,8 @@ export default function Home() {
                   }}
                   className={`qogir-window ${topicIndex === currentIndex ? 'active' : ''} ${isFocused ? 'focused' : ''}`}
                   onClick={() => handleWindowClick(index)}
+                  onMouseMove={(e) => handleCardMouseMove(e, index)}
+                  onMouseLeave={handleCardMouseLeave}
                   role="article"
                   aria-label={`Topic: ${topic.title}`}
                   tabIndex={isFocused ? 0 : -1}
