@@ -171,8 +171,12 @@ body {
   align-items: center;
   justify-content: center;
   padding-bottom: var(--qogir-statusbar-height);
+  /* Safe padding to prevent shadow clipping in focused mode */
+  padding-inline: clamp(1rem, 2vw, 2rem);
   transform-style: preserve-3d;
   z-index: 1;
+  box-sizing: border-box;
+  overflow: hidden; /* Prevent any overflow */
 }
 
 /* Qogir Window styling with 3D transforms */
@@ -183,6 +187,8 @@ body {
   box-shadow: var(--qogir-shadow-sm);
   max-width: 90%;
   max-height: 90vh;
+  width: auto;
+  min-width: 0;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -194,6 +200,7 @@ body {
   outline: none;
   transform-style: preserve-3d;
   backface-visibility: hidden;
+  box-sizing: border-box;
   /* Add subtle 3D depth to window content */
   background: linear-gradient(
     to bottom,
@@ -419,14 +426,22 @@ body {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 2rem;
-  padding: 3rem;
   padding-top: 5rem; /* Space for search bar */
   padding-bottom: calc(var(--qogir-statusbar-height) + 1rem);
+  /* Safe horizontal padding from viewport edges - responsive, with extra space for shadows and hover effects */
+  padding-inline: clamp(2rem, 4vw, 4rem);
   align-items: start;
   justify-content: center;
   overflow-y: auto;
+  overflow-x: hidden; /* Prevent horizontal scrolling */
   transform-style: preserve-3d;
   perspective: 1500px;
+  max-width: 100%;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+  /* Ensure container can accommodate scaled cards and shadows */
+  min-height: 0;
 }
 
 .qogir-desktop.overview .qogir-window {
@@ -434,7 +449,9 @@ body {
   opacity: 1;
   transform: scale(1) translateZ(0) rotateY(0deg) rotateX(0deg);
   max-width: 100%;
+  width: 100%;
   max-height: none;
+  min-width: 0; /* Allow flex shrinking */
   cursor: pointer;
   pointer-events: auto;
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
@@ -442,6 +459,7 @@ body {
               border 0.3s ease;
   transform-style: preserve-3d;
   will-change: transform;
+  box-sizing: border-box;
 }
 
 /* Staggered depth for cards - each card has different Z position */
@@ -902,6 +920,39 @@ body {
   font-size: 0.95rem;
 }
 
+/* Responsive breakpoints for overview mode cards */
+/* Large screens (1280px+) - 4 cards in a row */
+@media (min-width: 1280px) {
+  .qogir-desktop.overview .windows-container {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2rem;
+    padding-inline: clamp(2rem, 4vw, 4rem);
+  }
+}
+
+/* Medium-large screens (1024px - 1279px) - 3-4 cards, responsive */
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .qogir-desktop.overview .windows-container {
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.5rem;
+    padding-inline: 2rem;
+  }
+}
+
+/* Tablet screens (768px - 1023px) - 2 cards per row */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .qogir-desktop.overview .windows-container {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+    padding-inline: 2rem;
+  }
+  
+  .qogir-desktop.overview .qogir-window {
+    min-width: 0;
+    max-width: 100%;
+  }
+}
+
 /* Mobile responsiveness */
 @media (max-width: 768px) {
   .qogir-window {
@@ -927,6 +978,7 @@ body {
     padding: 1.5rem;
     padding-top: 4.5rem;
     padding-bottom: calc(var(--qogir-statusbar-height) + 1rem);
+    padding-inline: 1.5rem; /* Safe padding on mobile */
     gap: 1.5rem;
   }
 
@@ -982,6 +1034,18 @@ body {
 
   .qogir-modal-content {
     padding: 1.5rem;
+  }
+}
+
+/* Small mobile screens (425px and below) */
+@media (max-width: 425px) {
+  .qogir-desktop.overview .windows-container {
+    padding-inline: 1rem; /* Reduced padding on very small screens */
+    gap: 1rem;
+  }
+  
+  .qogir-desktop.overview .qogir-window {
+    min-width: 0;
   }
 }
 

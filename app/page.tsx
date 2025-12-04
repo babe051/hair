@@ -266,29 +266,11 @@ export default function Home() {
           
           if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
             setOverviewFocusedIndex((prev) => {
-              const next = (prev + 1) % topicsCount
-              // Use requestAnimationFrame to ensure DOM is updated
-              requestAnimationFrame(() => {
-                const element = windowRefs.current[next]
-                if (element) {
-                  element.focus()
-                  element.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-                }
-              })
-              return next
+              return (prev + 1) % topicsCount
             })
           } else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
             setOverviewFocusedIndex((prev) => {
-              const next = (prev - 1 + topicsCount) % topicsCount
-              // Use requestAnimationFrame to ensure DOM is updated
-              requestAnimationFrame(() => {
-                const element = windowRefs.current[next]
-                if (element) {
-                  element.focus()
-                  element.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-                }
-              })
-              return next
+              return (prev - 1 + topicsCount) % topicsCount
             })
           }
           return
@@ -309,13 +291,18 @@ export default function Home() {
       const validIndex = Math.max(0, Math.min(overviewFocusedIndex, filteredTopics.length - 1))
       if (validIndex !== overviewFocusedIndex && overviewFocusedIndex >= 0) {
         setOverviewFocusedIndex(validIndex)
+        return
       }
-      // Focus the window after DOM is ready
+      // Focus and scroll the window after DOM is ready
+      // Use double requestAnimationFrame to ensure React has rendered
       requestAnimationFrame(() => {
-        const element = windowRefs.current[validIndex]
-        if (element) {
-          element.focus()
-        }
+        requestAnimationFrame(() => {
+          const element = windowRefs.current[validIndex]
+          if (element) {
+            element.focus()
+            element.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+          }
+        })
       })
     }
   }, [isOverview, overviewFocusedIndex, filteredTopics])
@@ -406,6 +393,17 @@ export default function Home() {
   }, [])
 
   const currentTopic = topics[currentIndex]
+
+  // Calculate the position to display in footer
+  // In overview mode, show the position of the currently focused card
+  // In focused mode, show the current topic position
+  const displayPosition = isOverview && filteredTopics.length > 0
+    ? (() => {
+        const focusedTopic = filteredTopics[overviewFocusedIndex]
+        const topicIndex = topics.findIndex((t) => t.id === focusedTopic?.id)
+        return topicIndex >= 0 ? topicIndex + 1 : currentIndex + 1
+      })()
+    : currentIndex + 1
 
   // Calculate 3D transform based on mouse position
   const activeWindowTransform = !isOverview
@@ -673,7 +671,7 @@ export default function Home() {
             </div>
             <div className="qogir-statusbar-item qogir-statusbar-position">
               <span className="qogir-statusbar-label">
-                {currentIndex + 1}/{topics.length}
+                {displayPosition}/{topics.length}
               </span>
             </div>
           </>
