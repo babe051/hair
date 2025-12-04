@@ -116,8 +116,10 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState<string>('')
   const [overviewFocusedIndex, setOverviewFocusedIndex] = useState<number>(0)
   const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null)
+  const [mousePosition, setMousePosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 })
   const windowRefs = useRef<(HTMLDivElement | null)[]>([])
   const searchInputRef = useRef<HTMLInputElement>(null)
+  const desktopRef = useRef<HTMLDivElement>(null)
 
   // Memoize filtered topics for search
   const filteredTopics = useMemo(() => {
@@ -258,6 +260,25 @@ export default function Home() {
     }
   }, [isOverview, overviewFocusedIndex])
 
+  // Mouse tracking for 3D parallax effects
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (desktopRef.current) {
+        const rect = desktopRef.current.getBoundingClientRect()
+        const x = ((e.clientX - rect.left) / rect.width - 0.5) * 2 // -1 to 1
+        const y = ((e.clientY - rect.top) / rect.height - 0.5) * 2 // -1 to 1
+        setMousePosition({ x, y })
+      }
+    }
+
+    if (!isOverview) {
+      window.addEventListener('mousemove', handleMouseMove)
+      return () => {
+        window.removeEventListener('mousemove', handleMouseMove)
+      }
+    }
+  }, [isOverview])
+
   // Handle window click in overview mode
   const handleWindowClick = useCallback((index: number) => {
     if (isOverview) {
@@ -284,8 +305,24 @@ export default function Home() {
 
   const currentTopic = topics[currentIndex]
 
+  // Calculate 3D transform based on mouse position
+  const activeWindowTransform = !isOverview
+    ? `rotateY(${mousePosition.x * 5}deg) rotateX(${-mousePosition.y * 3}deg) translateZ(${Math.abs(mousePosition.x) * 20 + Math.abs(mousePosition.y) * 20}px)`
+    : ''
+
   return (
-    <div className={`qogir-desktop ${isOverview ? 'overview' : ''} ${slideDirection ? `slide-${slideDirection}` : ''}`}>
+    <div
+      ref={desktopRef}
+      className={`qogir-desktop ${isOverview ? 'overview' : ''} ${slideDirection ? `slide-${slideDirection}` : ''}`}
+      style={
+        !isOverview
+          ? {
+              '--mouse-x': `${mousePosition.x}`,
+              '--mouse-y': `${mousePosition.y}`,
+            } as React.CSSProperties
+          : undefined
+      }
+    >
       {/* Overlay for overview mode */}
       <div className="qogir-overlay" aria-hidden="true" />
 
@@ -442,6 +479,13 @@ export default function Home() {
                 role="article"
                 aria-label={`Topic: ${topic.title}`}
                 tabIndex={-1}
+                style={
+                  index === currentIndex && !isOverview
+                    ? {
+                        transform: activeWindowTransform,
+                      }
+                    : undefined
+                }
               >
                 {/* Qogir Header Bar */}
                 <div className="qogir-headerbar">

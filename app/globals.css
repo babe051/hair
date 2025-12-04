@@ -28,6 +28,11 @@
   --qogir-shadow-md: 0 12px 40px rgba(0, 0, 0, 0.3);
   --qogir-shadow-lg: 0 20px 60px rgba(0, 0, 0, 0.4);
   
+  /* 3D Perspective */
+  --qogir-perspective: 1200px;
+  --qogir-perspective-origin: 50% 50%;
+  --qogir-transform-style: preserve-3d;
+  
   /* Transitions */
   --qogir-transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   --qogir-transition-fast: 0.2s ease;
@@ -51,7 +56,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Qogir Desktop - Background */
+/* Qogir Desktop - Background with 3D Perspective */
 .qogir-desktop {
   width: 100vw;
   height: 100vh;
@@ -59,10 +64,51 @@ body {
   position: relative;
   overflow: hidden;
   transition: background 0.3s ease;
+  perspective: var(--qogir-perspective);
+  perspective-origin: var(--qogir-perspective-origin);
+  transform-style: var(--qogir-transform-style);
 }
 
 .qogir-desktop.overview {
   background: linear-gradient(135deg, var(--qogir-bg-overview-start) 0%, var(--qogir-bg-overview-end) 100%);
+}
+
+/* 4D-like time-based animation for desktop background */
+.qogir-desktop::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(
+    circle at calc(50% + var(--mouse-x, 0) * 10%) calc(50% + var(--mouse-y, 0) * 10%),
+    rgba(59, 175, 218, 0.1) 0%,
+    transparent 50%
+  );
+  opacity: 0.5;
+  pointer-events: none;
+  animation: timeShift 20s ease-in-out infinite;
+  z-index: 0;
+}
+
+@keyframes timeShift {
+  0%, 100% {
+    transform: translateZ(0) scale(1);
+    opacity: 0.3;
+  }
+  25% {
+    transform: translateZ(50px) scale(1.1);
+    opacity: 0.5;
+  }
+  50% {
+    transform: translateZ(0) scale(1);
+    opacity: 0.3;
+  }
+  75% {
+    transform: translateZ(-50px) scale(0.9);
+    opacity: 0.4;
+  }
 }
 
 /* Direction-aware slide animations */
@@ -76,22 +122,22 @@ body {
 
 @keyframes slideInLeft {
   from {
-    transform: translateX(100px) scale(0.95);
+    transform: translateX(100px) translateZ(-200px) scale(0.95) rotateY(-15deg);
     opacity: 0;
   }
   to {
-    transform: translateX(0) scale(1);
+    transform: translateX(0) translateZ(0) scale(1) rotateY(0deg);
     opacity: 1;
   }
 }
 
 @keyframes slideInRight {
   from {
-    transform: translateX(-100px) scale(0.95);
+    transform: translateX(-100px) translateZ(-200px) scale(0.95) rotateY(15deg);
     opacity: 0;
   }
   to {
-    transform: translateX(0) scale(1);
+    transform: translateX(0) translateZ(0) scale(1) rotateY(0deg);
     opacity: 1;
   }
 }
@@ -114,7 +160,7 @@ body {
   pointer-events: auto;
 }
 
-/* Windows container */
+/* Windows container with 3D transforms */
 .windows-container {
   position: relative;
   width: 100%;
@@ -123,9 +169,11 @@ body {
   align-items: center;
   justify-content: center;
   padding-bottom: var(--qogir-statusbar-height);
+  transform-style: preserve-3d;
+  z-index: 1;
 }
 
-/* Qogir Window styling */
+/* Qogir Window styling with 3D transforms */
 .qogir-window {
   position: absolute;
   background: var(--qogir-window-bg);
@@ -142,6 +190,8 @@ body {
               border 0.3s ease;
   will-change: transform, opacity;
   outline: none;
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
 }
 
 /* Focus indicators */
@@ -156,19 +206,20 @@ body {
   box-shadow: var(--qogir-shadow-md), 0 0 0 3px var(--qogir-accent);
 }
 
-/* Focused mode: active window */
+/* Focused mode: active window with 3D depth and parallax */
 .qogir-window.active {
   opacity: 1;
-  transform: translateX(0) scale(1);
+  transform: translateX(0) translateZ(0) scale(1) rotateY(0deg);
   z-index: 10;
-  box-shadow: var(--qogir-shadow-md);
+  box-shadow: var(--qogir-shadow-md), 0 0 60px rgba(59, 175, 218, 0.1);
+  transition: transform 0.1s ease-out, box-shadow var(--qogir-transition);
 }
 
-/* Focused mode: inactive windows */
+/* Focused mode: inactive windows with 3D positioning */
 .qogir-window:not(.active) {
   opacity: 0;
   pointer-events: none;
-  transform: translateX(100px) scale(0.95);
+  transform: translateX(100px) translateZ(-200px) scale(0.95) rotateY(-15deg);
 }
 
 /* Qogir Header Bar (GNOME-style titlebar) */
@@ -301,7 +352,7 @@ body {
 .qogir-desktop.overview .qogir-window {
   position: relative;
   opacity: 1;
-  transform: scale(1);
+  transform: scale(1) translateZ(0) rotateY(0deg);
   max-width: 100%;
   max-height: none;
   cursor: pointer;
@@ -312,13 +363,39 @@ body {
 }
 
 .qogir-desktop.overview .qogir-window:hover {
-  transform: scale(1.03);
-  box-shadow: var(--qogir-shadow-md);
+  transform: scale(1.03) translateZ(50px) rotateY(5deg);
+  box-shadow: var(--qogir-shadow-md), 0 0 40px rgba(59, 175, 218, 0.2);
 }
 
 .qogir-desktop.overview .qogir-window.active {
   border: 2px solid var(--qogir-accent);
   box-shadow: 0 0 0 2px var(--qogir-accent), 0 8px 24px rgba(59, 175, 218, 0.3);
+  transform: scale(1.05) translateZ(100px) rotateY(0deg);
+  animation: pulse3d 2s ease-in-out infinite, float3d 4s ease-in-out infinite;
+}
+
+@keyframes pulse3d {
+  0%, 100% {
+    transform: scale(1.05) translateZ(100px) rotateY(0deg);
+  }
+  50% {
+    transform: scale(1.08) translateZ(120px) rotateY(2deg);
+  }
+}
+
+@keyframes float3d {
+  0%, 100% {
+    transform: scale(1.05) translateZ(100px) translateY(0) rotateY(0deg);
+  }
+  25% {
+    transform: scale(1.05) translateZ(100px) translateY(-5px) rotateY(1deg);
+  }
+  50% {
+    transform: scale(1.05) translateZ(100px) translateY(0) rotateY(0deg);
+  }
+  75% {
+    transform: scale(1.05) translateZ(100px) translateY(5px) rotateY(-1deg);
+  }
 }
 
 .qogir-desktop.overview .qogir-window-content {
@@ -348,12 +425,12 @@ body {
   display: none;
 }
 
-/* Search Bar */
+/* Search Bar with 3D effect */
 .qogir-search-bar {
   position: fixed;
   top: 1rem;
   left: 50%;
-  transform: translateX(-50%);
+  transform: translateX(-50%) translateZ(0);
   z-index: 101;
   display: flex;
   align-items: center;
@@ -365,6 +442,20 @@ body {
   backdrop-filter: blur(10px);
   min-width: 300px;
   max-width: 500px;
+  transform-style: preserve-3d;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3), 0 0 40px rgba(59, 175, 218, 0.1);
+  animation: slideDown3d 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideDown3d {
+  from {
+    transform: translateX(-50%) translateY(-20px) translateZ(-100px) rotateX(-10deg);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(-50%) translateY(0) translateZ(0) rotateX(0deg);
+    opacity: 1;
+  }
 }
 
 .qogir-search-input {
@@ -406,7 +497,7 @@ body {
   outline-offset: 2px;
 }
 
-/* Qogir Status Bar (bottom bar with keyboard hints) */
+/* Qogir Status Bar (bottom bar with keyboard hints) - 3D effect */
 .qogir-statusbar {
   position: fixed;
   bottom: 0;
@@ -424,6 +515,9 @@ body {
   font-size: 0.85rem;
   color: var(--qogir-text-light);
   transition: height var(--qogir-transition-fast), padding var(--qogir-transition-fast);
+  transform-style: preserve-3d;
+  transform: translateZ(0);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
 }
 
 .qogir-statusbar.collapsed {
@@ -484,19 +578,21 @@ body {
   min-width: 2rem;
   text-align: center;
   transition: all var(--qogir-transition-fast);
+  transform-style: preserve-3d;
+  transform: translateZ(0);
 }
 
 .qogir-statusbar-key:hover {
   background: rgba(59, 175, 218, 0.25);
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(59, 175, 218, 0.2);
+  transform: translateY(-2px) translateZ(10px) rotateX(-5deg);
+  box-shadow: 0 4px 8px rgba(59, 175, 218, 0.3), 0 0 20px rgba(59, 175, 218, 0.2);
 }
 
 .qogir-statusbar-label {
   color: var(--qogir-text-light);
 }
 
-/* Current topic indicator */
+/* Current topic indicator with 3D effect */
 .qogir-current-topic {
   position: fixed;
   top: 1rem;
@@ -509,6 +605,19 @@ body {
   z-index: 100;
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.1);
+  transform-style: preserve-3d;
+  transform: translateZ(0);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3), 0 0 40px rgba(59, 175, 218, 0.1);
+  animation: floatIndicator 3s ease-in-out infinite;
+}
+
+@keyframes floatIndicator {
+  0%, 100% {
+    transform: translateZ(0) translateY(0);
+  }
+  50% {
+    transform: translateZ(20px) translateY(-3px);
+  }
 }
 
 .qogir-desktop.overview .qogir-current-topic {
@@ -543,14 +652,16 @@ body {
 .qogir-modal {
   background: var(--qogir-window-bg);
   border-radius: var(--qogir-window-radius);
-  box-shadow: var(--qogir-shadow-lg);
+  box-shadow: var(--qogir-shadow-lg), 0 0 80px rgba(59, 175, 218, 0.2);
   max-width: 600px;
   width: 100%;
   max-height: 80vh;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: slideUp3d 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-style: preserve-3d;
+  transform: translateZ(0);
 }
 
 @keyframes slideUp {
@@ -560,6 +671,17 @@ body {
   }
   to {
     transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp3d {
+  from {
+    transform: translateY(50px) translateZ(-200px) rotateX(15deg);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) translateZ(0) rotateX(0deg);
     opacity: 1;
   }
 }
